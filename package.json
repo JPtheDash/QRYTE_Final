@@ -1,6 +1,5 @@
 {
-  "name": "qryte-ui",
-  "homepage": "https://JPtheDash.github.io/QRyte",
+  "name": "qryte1",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,13 +8,11 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
-    "predeploy": "npm run build",
-"deploy": "gh-pages -d dist"
-
   },
   "dependencies": {
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.10.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

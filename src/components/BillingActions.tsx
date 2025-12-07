@@ -1,14 +1,25 @@
 import React from 'react';
 
-const BillingActions: React.FC<{ onAddItem?: () => void; onPrint?: () => void }> = ({ onAddItem, onPrint }) => {
+const BillingActions: React.FC = () => {
   return (
     <div>
+      <button style={{
+        width: '100%',
+        padding: '10px',
+        backgroundColor: '#4caf50',
+        color: 'white',
+        border: 'none',
+        borderRadius: '5px',
+        cursor: 'pointer',
+        fontWeight: 'bold',
+        marginBottom: '20px'
+      }}>
+        Generate Bill
+      </button>
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <button onClick={onAddItem} style={{ padding: '10px', border: '1px solid #4caf50', borderRadius: '5px', background: 'white', cursor: 'pointer' }}>
+        <button style={{ padding: '10px', border: '1px solid #4caf50', borderRadius: '5px', background: 'white', cursor: 'pointer' }}>
           + Add Item from Menu
-        </button>
-        <button onClick={onPrint} style={{ padding: '10px', border: '1px solid #ff9800', borderRadius: '5px', background: 'white', cursor: 'pointer' }}>
-          🖨️ Print Invoice
         </button>
         <button style={{ padding: '10px', border: '1px solid #4caf50', borderRadius: '5px', background: 'white', cursor: 'pointer' }}>
           Calculate GST
@@ -23,3 +34,5 @@ const BillingActions: React.FC<{ onAddItem?: () => void; onPrint?: () => void }>
 };
 
 export default BillingActions;
+
+
