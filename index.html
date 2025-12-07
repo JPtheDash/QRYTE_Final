@@ -5,24 +5,12 @@
     <link rel="icon" type="image/svg+xml" href="/QRYTE_Final/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>QRYTE - Hotel Management System</title>
-    <script type="text/javascript">
-      // Handle GitHub Pages SPA routing
-      (function() {
-        var redirect = sessionStorage.redirect;
-        delete sessionStorage.redirect;
-        if (redirect && redirect !== location.href) {
-          history.replaceState(null, null, redirect);
-        }
-      })();
-      
-      // Decode the route from query parameter
-      (function() {
-        var l = window.location;
-        if (l.search[1] === '/') {
-          var decoded = l.search.slice(2).replace(/~and~/g, '&');
-          window.history.replaceState(null, null, l.pathname.slice(0, -1) + decoded + l.hash);
-        }
-      })();
+    <script>
+      // Handle redirect from 404 page
+      if (window.location.search.includes('redirect=')) {
+        var redirect = decodeURIComponent(new URLSearchParams(window.location.search).get('redirect'));
+        window.history.replaceState({}, document.title, '/QRYTE_Final' + redirect);
+      }
     </script>
     <script type="module" crossorigin src="/QRYTE_Final/assets/index-D60TUtII.js"></script>
     <link rel="stylesheet" crossorigin href="/QRYTE_Final/assets/index-CxDqeB8E.css">
