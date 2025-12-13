@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 
@@ -33,6 +33,13 @@ const CustomerMenuPage: React.FC = () => {
   const [couponCode, setCouponCode] = useState('');
   const [showCart, setShowCart] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [highlights, setHighlights] = useState<{ highlightedItemId?: number; topDealItemId?: number }>({});
+
+  useEffect(() => {
+    api.getTodaysHighlight().then(hl => {
+      if (hl) setHighlights(hl);
+    });
+  }, []);
 
   // Group menu by category
   const categorizedMenu = menuItems.reduce<Record<string, MenuItem[]>>((acc, item) => {
@@ -78,6 +85,17 @@ const CustomerMenuPage: React.FC = () => {
     }
   };
 
+  const shareOnWhatsApp = () => {
+    const itemsList = Object.values(cart)
+      .map(item => `${item.name} x${item.qty} - ₹${item.price * item.qty}`)
+      .join('\n');
+    
+    const message = `*My Order from QRyte*\nTable #${tableNumber}\n\n${itemsList}\n\n*Total: ₹${getTotalAmount()}*`;
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   const handlePlaceOrder = async () => {
     if (Object.keys(cart).length === 0) {
       alert('❌ Please add items to cart');
@@ -101,6 +119,15 @@ const CustomerMenuPage: React.FC = () => {
       };
 
       const response = await api.placeCustomerOrder(payload);
+      
+      // Deduct inventory for each item
+      for (const item of items) {
+        await api.deductInventory(item.id, item.qty);
+      }
+      
+      // Mark table as occupied
+      await api.updateTableStatus(parseInt(tableNumber), 'occupied');
+
       alert('✅ Order placed successfully! Order ID: ' + response.orderId);
       setCart({});
       setCouponCode('');
@@ -113,8 +140,11 @@ const CustomerMenuPage: React.FC = () => {
     }
   };
 
+  const highlightedItem = highlights.highlightedItemId ? menuItems.find(i => i.id === highlights.highlightedItemId) : null;
+  const topDealItem = highlights.topDealItemId ? menuItems.find(i => i.id === highlights.topDealItemId) : null;
+
   return (
-    <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+    <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto', paddingBottom: '100px' }}>
       {/* Header */}
       <div style={{
         display: 'flex',
@@ -128,21 +158,79 @@ const CustomerMenuPage: React.FC = () => {
           <h1 style={{ margin: 0 }}>📱 Customer Menu</h1>
           <p style={{ margin: '5px 0 0 0', color: '#666' }}>Table #{tableNumber}</p>
         </div>
-        <button
-          onClick={() => setShowCart(!showCart)}
-          style={{
-            padding: '10px 20px',
-            fontSize: '16px',
-            backgroundColor: '#4caf50',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
-            cursor: 'pointer'
-          }}
-        >
-          🛒 Cart ({Object.keys(cart).length})
-        </button>
       </div>
+
+      {/* Highlights Section */}
+      {(highlightedItem || topDealItem) && (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+          gap: '15px',
+          marginBottom: '30px'
+        }}>
+          {highlightedItem && (
+            <div style={{
+              backgroundColor: 'linear-gradient(135deg, #fff9c4 0%, #fffde7 100%)',
+              border: '3px solid #fbc02d',
+              borderRadius: '12px',
+              padding: '20px',
+              boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+            }}>
+              <p style={{ margin: '0 0 10px 0', fontSize: '12px', fontWeight: 'bold', color: '#f57f17' }}>⭐ TODAY'S HIGHLIGHT</p>
+              <h3 style={{ margin: '10px 0 5px 0', fontSize: '20px' }}>{highlightedItem.name}</h3>
+              <p style={{ margin: '5px 0 15px 0', fontSize: '14px', color: '#666' }}>{highlightedItem.description}</p>
+              <p style={{ margin: '10px 0 0 0', fontSize: '24px', fontWeight: 'bold', color: '#f57f17' }}>₹{highlightedItem.price}</p>
+              <button
+                onClick={() => handleAddToCart(highlightedItem)}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  backgroundColor: '#f57f17',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  marginTop: '10px'
+                }}
+              >
+                ➕ Add to Cart
+              </button>
+            </div>
+          )}
+
+          {topDealItem && (
+            <div style={{
+              backgroundColor: 'linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%)',
+              border: '3px solid #d32f2f',
+              borderRadius: '12px',
+              padding: '20px',
+              boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+            }}>
+              <p style={{ margin: '0 0 10px 0', fontSize: '12px', fontWeight: 'bold', color: '#d32f2f' }}>🎁 TOP DEAL OF THE DAY</p>
+              <h3 style={{ margin: '10px 0 5px 0', fontSize: '20px' }}>{topDealItem.name}</h3>
+              <p style={{ margin: '5px 0 15px 0', fontSize: '14px', color: '#666' }}>{topDealItem.description}</p>
+              <p style={{ margin: '10px 0 0 0', fontSize: '24px', fontWeight: 'bold', color: '#d32f2f' }}>₹{topDealItem.price}</p>
+              <button
+                onClick={() => handleAddToCart(topDealItem)}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  backgroundColor: '#d32f2f',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  marginTop: '10px'
+                }}
+              >
+                ➕ Add to Cart
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: '20px' }}>
         {/* Menu Section */}
@@ -159,7 +247,9 @@ const CustomerMenuPage: React.FC = () => {
                     borderRadius: '8px',
                     padding: '15px',
                     backgroundColor: '#fff',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    transition: 'transform 0.2s',
+                    cursor: 'pointer'
                   }}>
                     <h3 style={{ margin: '0 0 5px 0', color: '#333' }}>{item.name}</h3>
                     <p style={{ margin: '5px 0', fontSize: '12px', color: '#666' }}>{item.description}</p>
@@ -291,6 +381,26 @@ const CustomerMenuPage: React.FC = () => {
                   </div>
                 </div>
 
+                {/* WhatsApp Share */}
+                <div style={{ marginTop: '10px' }}>
+                  <button
+                    onClick={shareOnWhatsApp}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      backgroundColor: '#25D366',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '5px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    💬 Share on WhatsApp
+                  </button>
+                </div>
+
                 {/* Total */}
                 <div style={{
                   marginTop: '15px',
@@ -332,6 +442,54 @@ const CustomerMenuPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Floating Cart Button */}
+      {!showCart && (
+        <button
+          onClick={() => setShowCart(true)}
+          style={{
+            position: 'fixed',
+            bottom: '30px',
+            right: '30px',
+            width: '60px',
+            height: '60px',
+            borderRadius: '50%',
+            backgroundColor: '#4caf50',
+            color: 'white',
+            border: 'none',
+            fontSize: '28px',
+            cursor: 'pointer',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'transform 0.2s'
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.1)')}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+        >
+          🛒
+          {Object.keys(cart).length > 0 && (
+            <div style={{
+              position: 'absolute',
+              top: '-5px',
+              right: '-5px',
+              backgroundColor: '#d32f2f',
+              color: 'white',
+              borderRadius: '50%',
+              width: '24px',
+              height: '24px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '12px',
+              fontWeight: 'bold'
+            }}>
+              {Object.keys(cart).length}
+            </div>
+          )}
+        </button>
+      )}
     </div>
   );
 };

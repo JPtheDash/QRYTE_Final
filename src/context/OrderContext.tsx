@@ -8,7 +8,8 @@
  */
 
 import React, { createContext, useState, useCallback, useEffect } from 'react';
-import type { OrderItem, ActivityEvent, MenuItem } from '../services/api';
+import type { OrderItem, ActivityEvent, MenuItem, TodaysHighlight } from '../services/api';
+import { api } from '../services/api';
 
 export interface InvoiceData {
   id: string;
@@ -34,6 +35,14 @@ export interface OrderContextType {
   // Recent Activity
   activities: ActivityEvent[];
   addActivity: (message: string, type: ActivityEvent['type']) => void;
+
+  // Today's Highlights & Deals
+  todaysHighlight: TodaysHighlight | null;
+  setHighlight: (highlightedItemId: number, topDealItemId: number) => Promise<void>;
+
+  // Table & Inventory Integration
+  occupyTable: (tableNumber: number) => Promise<void>;
+  deductInventory: (menuItemId: number, quantity: number) => Promise<void>;
 }
 
 const defaultValue: OrderContextType = {
@@ -47,6 +56,10 @@ const defaultValue: OrderContextType = {
   clearInvoice: () => {},
   activities: [],
   addActivity: () => {},
+  todaysHighlight: null,
+  setHighlight: async () => {},
+  occupyTable: async () => {},
+  deductInventory: async () => {},
 };
 
 export const OrderContext = createContext<OrderContextType>(defaultValue);
@@ -61,6 +74,15 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const saved = localStorage.getItem('qryte_activities');
     return saved ? JSON.parse(saved) : [];
   });
+
+  const [todaysHighlight, setTodaysHighlight] = useState<TodaysHighlight | null>(null);
+
+  // Load highlights on mount
+  useEffect(() => {
+    api.getTodaysHighlight().then(highlight => {
+      if (highlight) setTodaysHighlight(highlight);
+    });
+  }, []);
 
   // Persist invoice to localStorage
   useEffect(() => {
@@ -206,6 +228,26 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setActivities(prev => [event, ...prev].slice(0, 50)); // Keep last 50
   }, []);
 
+  const setHighlight = useCallback(async (highlightedItemId: number, topDealItemId: number) => {
+    await api.setTodaysHighlight(highlightedItemId, topDealItemId);
+    const highlight = await api.getTodaysHighlight();
+    if (highlight) setTodaysHighlight(highlight);
+    addActivity(`Updated today's highlight and top deal`, 'system');
+  }, []);
+
+  const occupyTable = useCallback(async (tableNumber: number) => {
+    // Update table status to occupied
+    await api.updateTableStatus(tableNumber, 'occupied');
+    addActivity(`Table ${tableNumber} marked as occupied`, 'bill');
+  }, []);
+
+  const deductInventory = useCallback(async (menuItemId: number, quantity: number) => {
+    const result = await api.deductInventory(menuItemId, quantity);
+    if (result.success) {
+      addActivity(`Inventory deducted for item ${menuItemId}`, 'order');
+    }
+  }, []);
+
   const value: OrderContextType = {
     invoice,
     addItem,
@@ -217,6 +259,10 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     clearInvoice,
     activities,
     addActivity,
+    todaysHighlight,
+    setHighlight,
+    occupyTable,
+    deductInventory,
   };
 
   return (

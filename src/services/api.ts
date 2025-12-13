@@ -83,6 +83,61 @@ export interface ActivityEvent {
   type: 'bill' | 'cleaning' | 'checkin' | 'checkout' | 'order' | 'system';
 }
 
+export interface Employee {
+  id: string;
+  name: string;
+  employeeId: string;
+  email?: string;
+  phone?: string;
+  position: string;
+  department: string;
+  aadhaarCard?: string; // filename/path
+  basicDetails?: {
+    dob?: string;
+    address?: string;
+    joinDate?: string;
+  };
+  loginTime?: string;
+  logoutTime?: string;
+  salary?: {
+    amount: number;
+    currency: string;
+    paymentFrequency: 'monthly' | 'weekly';
+  };
+  leaves?: {
+    totalLeaves: number;
+    usedLeaves: number;
+    availableLeaves: number;
+  };
+  active: boolean;
+}
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  category: string;
+  quantity: number;
+  unit: string; // kg, liters, pieces, grams, ml
+  minThreshold: number;
+  unitPrice: number;
+  supplier?: string;
+  lastUpdated?: Date;
+}
+
+export interface InventoryRecipe {
+  menuItemId: number;
+  ingredients: {
+    inventoryItemId: string;
+    quantityNeeded: number;
+  }[];
+}
+
+export interface TodaysHighlight {
+  highlightedItemId: number;
+  topDealItemId: number;
+  date: string;
+}
+
 // ============================================================================
 // SAMPLE DATA
 // ============================================================================
@@ -122,6 +177,84 @@ const sampleOnlineOrders: OnlineOrder[] = [
   { id: '1', platform: 'zomato', orderId: '5544', items: ['Biryani', 'Naan', 'Lassi'], total: 450, status: 'delivered', customerName: 'Arjun' },
   { id: '2', platform: 'swiggy', orderId: '7823', items: ['Butter Chicken', 'Rice'], total: 520, status: 'ready', customerName: 'Priya' },
   { id: '3', platform: 'zomato', orderId: '6201', items: ['Dal Makhani', 'Naan', 'Samosa'], total: 380, status: 'preparing', customerName: 'Vikram' },
+];
+
+const sampleEmployees: Employee[] = [
+  {
+    id: '1',
+    name: 'Raj Kumar',
+    employeeId: 'EMP001',
+    email: 'raj@qryte.com',
+    phone: '9876543210',
+    position: 'Chef',
+    department: 'Kitchen',
+    basicDetails: { dob: '1990-05-15', address: 'Delhi', joinDate: '2022-01-10' },
+    salary: { amount: 25000, currency: 'INR', paymentFrequency: 'monthly' },
+    leaves: { totalLeaves: 20, usedLeaves: 5, availableLeaves: 15 },
+    active: true,
+  },
+  {
+    id: '2',
+    name: 'Priya Singh',
+    employeeId: 'EMP002',
+    email: 'priya@qryte.com',
+    phone: '9876543211',
+    position: 'Waiter',
+    department: 'Front of House',
+    basicDetails: { dob: '1998-03-22', address: 'Bangalore', joinDate: '2023-06-15' },
+    salary: { amount: 12000, currency: 'INR', paymentFrequency: 'monthly' },
+    leaves: { totalLeaves: 20, usedLeaves: 2, availableLeaves: 18 },
+    active: true,
+  },
+  {
+    id: '3',
+    name: 'Arjun Patel',
+    employeeId: 'EMP003',
+    email: 'arjun@qryte.com',
+    phone: '9876543212',
+    position: 'Manager',
+    department: 'Administration',
+    basicDetails: { dob: '1985-08-30', address: 'Mumbai', joinDate: '2021-02-01' },
+    salary: { amount: 35000, currency: 'INR', paymentFrequency: 'monthly' },
+    leaves: { totalLeaves: 25, usedLeaves: 8, availableLeaves: 17 },
+    active: true,
+  },
+];
+
+const sampleInventory: InventoryItem[] = [
+  { id: '1', name: 'Basmati Rice', category: 'Grains', quantity: 50, unit: 'kg', minThreshold: 10, unitPrice: 80, supplier: 'Farm Fresh' },
+  { id: '2', name: 'Chicken (Fresh)', category: 'Proteins', quantity: 25, unit: 'kg', minThreshold: 5, unitPrice: 250, supplier: 'Local Supplier' },
+  { id: '3', name: 'Dal (Moong)', category: 'Grains', quantity: 20, unit: 'kg', minThreshold: 5, unitPrice: 120, supplier: 'Farm Fresh' },
+  { id: '4', name: 'Vegetable Oil', category: 'Oils', quantity: 50, unit: 'liters', minThreshold: 10, unitPrice: 150, supplier: 'Oil Co' },
+  { id: '5', name: 'Paneer', category: 'Dairy', quantity: 10, unit: 'kg', minThreshold: 2, unitPrice: 400, supplier: 'Dairy Fresh' },
+  { id: '6', name: 'Flour (Maida)', category: 'Grains', quantity: 30, unit: 'kg', minThreshold: 5, unitPrice: 50, supplier: 'Farm Fresh' },
+  { id: '7', name: 'Ghee', category: 'Oils', quantity: 15, unit: 'liters', minThreshold: 3, unitPrice: 500, supplier: 'Dairy Fresh' },
+  { id: '8', name: 'Ginger Garlic Paste', category: 'Condiments', quantity: 5, unit: 'kg', minThreshold: 1, unitPrice: 200, supplier: 'Local Supplier' },
+];
+
+const sampleRecipes: InventoryRecipe[] = [
+  {
+    menuItemId: 1, // Biryani
+    ingredients: [
+      { inventoryItemId: '1', quantityNeeded: 0.15 }, // 150g rice
+      { inventoryItemId: '2', quantityNeeded: 0.1 }, // 100g chicken
+      { inventoryItemId: '4', quantityNeeded: 0.05 }, // 50ml oil
+    ],
+  },
+  {
+    menuItemId: 2, // Butter Chicken
+    ingredients: [
+      { inventoryItemId: '2', quantityNeeded: 0.2 }, // 200g chicken
+      { inventoryItemId: '4', quantityNeeded: 0.04 }, // 40ml oil
+    ],
+  },
+  {
+    menuItemId: 3, // Dal Makhani
+    ingredients: [
+      { inventoryItemId: '3', quantityNeeded: 0.15 }, // 150g dal
+      { inventoryItemId: '4', quantityNeeded: 0.03 }, // 30ml oil
+    ],
+  },
 ];
 
 // ============================================================================
@@ -293,6 +426,124 @@ export const api = {
       ...table,
     };
   },
+
+  // Employee Management
+  getEmployees: async (): Promise<Employee[]> => {
+    console.log('👥 [API] Fetching employees');
+    await new Promise(resolve => setTimeout(resolve, 200));
+    return sampleEmployees;
+  },
+
+  addEmployee: async (payload: Omit<Employee, 'id'>): Promise<Employee> => {
+    console.log('➕ [API] Adding employee:', payload);
+    await new Promise(resolve => setTimeout(resolve, 300));
+    return {
+      id: Date.now().toString(),
+      ...payload,
+    };
+  },
+
+  updateEmployee: async (id: string, payload: Partial<Employee>): Promise<Employee> => {
+    console.log(`✏️ [API] Updating employee ${id}:`, payload);
+    await new Promise(resolve => setTimeout(resolve, 300));
+    const emp = sampleEmployees.find(e => e.id === id);
+    return { ...emp, ...payload, id } as Employee;
+  },
+
+  deleteEmployee: async (id: string): Promise<{ success: boolean }> => {
+    console.log(`🗑️ [API] Deleting employee ${id}`);
+    await new Promise(resolve => setTimeout(resolve, 200));
+    return { success: true };
+  },
+
+  // Inventory Management
+  getInventory: async (): Promise<InventoryItem[]> => {
+    console.log('📦 [API] Fetching inventory');
+    await new Promise(resolve => setTimeout(resolve, 200));
+    return sampleInventory;
+  },
+
+  addInventoryItem: async (payload: Omit<InventoryItem, 'id'>): Promise<InventoryItem> => {
+    console.log('➕ [API] Adding inventory item:', payload);
+    await new Promise(resolve => setTimeout(resolve, 300));
+    return {
+      id: Date.now().toString(),
+      ...payload,
+    };
+  },
+
+  updateInventoryItem: async (id: string, payload: Partial<InventoryItem>): Promise<InventoryItem> => {
+    console.log(`✏️ [API] Updating inventory item ${id}:`, payload);
+    await new Promise(resolve => setTimeout(resolve, 300));
+    const item = sampleInventory.find(i => i.id === id);
+    return { ...item, ...payload, id } as InventoryItem;
+  },
+
+  deductInventory: async (menuItemId: number, quantity: number): Promise<{ success: boolean; message: string }> => {
+    console.log(`📉 [API] Deducting inventory for menu item ${menuItemId} (qty: ${quantity})`);
+    await new Promise(resolve => setTimeout(resolve, 200));
+    const recipe = sampleRecipes.find(r => r.menuItemId === menuItemId);
+    if (!recipe) return { success: false, message: 'Recipe not found' };
+    
+    for (const ingredient of recipe.ingredients) {
+      const item = sampleInventory.find(i => i.id === ingredient.inventoryItemId);
+      if (item) {
+        item.quantity -= ingredient.quantityNeeded * quantity;
+      }
+    }
+    return { success: true, message: 'Inventory deducted successfully' };
+  },
+
+  getInventoryRecipes: async (): Promise<InventoryRecipe[]> => {
+    console.log('📖 [API] Fetching inventory recipes');
+    await new Promise(resolve => setTimeout(resolve, 150));
+    return sampleRecipes;
+  },
+
+  // Highlights & Deals
+  getTodaysHighlight: async (): Promise<TodaysHighlight | null> => {
+    console.log('⭐ [API] Fetching today\'s highlight');
+    await new Promise(resolve => setTimeout(resolve, 150));
+    const stored = localStorage.getItem('todaysHighlight');
+    if (stored) return JSON.parse(stored);
+    return null;
+  },
+
+  setTodaysHighlight: async (highlightedItemId: number, topDealItemId: number): Promise<{ success: boolean }> => {
+    console.log('⭐ [API] Setting today\'s highlight and deal');
+    await new Promise(resolve => setTimeout(resolve, 200));
+    const highlight: TodaysHighlight = {
+      highlightedItemId,
+      topDealItemId,
+      date: new Date().toISOString().split('T')[0],
+    };
+    localStorage.setItem('todaysHighlight', JSON.stringify(highlight));
+    return { success: true };
+  },
+
+  // Order History
+  getOrderHistory: async (): Promise<Order[]> => {
+    console.log('📜 [API] Fetching order history');
+    await new Promise(resolve => setTimeout(resolve, 200));
+    const stored = localStorage.getItem('orderHistory');
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  },
+
+  saveOrderToHistory: async (order: Order): Promise<{ success: boolean }> => {
+    console.log('💾 [API] Saving order to history:', order);
+    await new Promise(resolve => setTimeout(resolve, 150));
+    const history = (await api.getOrderHistory()) || [];
+    history.push(order);
+    localStorage.setItem('orderHistory', JSON.stringify(history));
+    return { success: true };
+  },
 };
 
 // ============================================================================
@@ -303,6 +554,9 @@ export const getMenuItems = (): MenuItem[] => sampleMenuItems;
 export const getTables = (): Table[] => sampleTables;
 export const getRooms = (): Room[] => sampleRooms;
 export const getOnlineOrders = (): OnlineOrder[] => sampleOnlineOrders;
+export const getEmployees = (): Employee[] => sampleEmployees;
+export const getInventory = (): InventoryItem[] => sampleInventory;
+export const getRecipes = (): InventoryRecipe[] => sampleRecipes;
 
 export const getOrderDetails = (tableId: number) => ({
   tableId,

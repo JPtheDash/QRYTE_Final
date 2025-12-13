@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { api } from '../services/api';
+import { api, getRooms as getInitialRooms } from '../services/api';
+import type { Room } from '../services/api';
 
 interface MenuItem {
   id: number;
@@ -58,7 +59,12 @@ const AdminDashboardPage: React.FC = () => {
     { id: 2, tableNumber: 2, capacity: 4, status: 'occupied' },
     { id: 3, tableNumber: 3, capacity: 6, status: 'available' },
   ]);
+  const [rooms, setRooms] = useState<Room[]>(getInitialRooms());
   const [orders, setOrders] = useState<Order[]>([]);
+  const [highlightedItem, setHighlightedItem] = useState<number | null>(null);
+  const [topDealItem, setTopDealItem] = useState<number | null>(null);
+  const [showRoomForm, setShowRoomForm] = useState(false);
+  const [roomFormData, setRoomFormData] = useState({ guestName: '', checkInDate: '', checkOutDate: '' });
 
   const [showMenuForm, setShowMenuForm] = useState(false);
   const [showTableForm, setShowTableForm] = useState(false);
@@ -139,6 +145,23 @@ const AdminDashboardPage: React.FC = () => {
     }
   };
 
+  // Room Management
+  const handleCheckOutGuest = async (roomId: number) => {
+    await api.checkOutGuest(roomId);
+    setRooms(getInitialRooms());
+    alert('✅ Guest checked out');
+  };
+
+  // Today's Highlights
+  const handleSetHighlight = async () => {
+    if (!highlightedItem || !topDealItem) {
+      alert('❌ Please select both highlight and top deal items');
+      return;
+    }
+    await api.setTodaysHighlight(highlightedItem, topDealItem);
+    alert('✅ Highlights set successfully');
+  };
+
   return (
     <div style={{ padding: '20px', maxWidth: '1400px', margin: '0 auto' }}>
       {/* Header */}
@@ -152,7 +175,7 @@ const AdminDashboardPage: React.FC = () => {
       }}>
         <div>
           <h1 style={{ margin: 0 }}>💼 Admin Dashboard</h1>
-          <p style={{ margin: '5px 0 0 0', color: '#666' }}>Manage menu, tables & orders</p>
+          <p style={{ margin: '5px 0 0 0', color: '#666' }}>Manage menu, tables, rooms & orders</p>
         </div>
         <button
           onClick={logout}
@@ -178,7 +201,7 @@ const AdminDashboardPage: React.FC = () => {
         borderBottom: '2px solid #d0e7cd',
         flexWrap: 'wrap'
       }}>
-        {['menu', 'tables', 'orders'].map(tab => (
+        {['menu', 'tables', 'rooms', 'highlights', 'orders'].map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -195,6 +218,8 @@ const AdminDashboardPage: React.FC = () => {
           >
             {tab === 'menu' && '📋 Menu Management'}
             {tab === 'tables' && '🪑 Table Management'}
+            {tab === 'rooms' && '🛏️ Room Management'}
+            {tab === 'highlights' && '⭐ Today\'s Highlight'}
             {tab === 'orders' && '📜 Order History'}
           </button>
         ))}
@@ -473,6 +498,202 @@ const AdminDashboardPage: React.FC = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Room Management Tab */}
+      {activeTab === 'rooms' && (
+        <div>
+          <button
+            onClick={() => setShowRoomForm(!showRoomForm)}
+            style={{
+              marginBottom: '20px',
+              padding: '12px 24px',
+              backgroundColor: '#4caf50',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              fontSize: '14px'
+            }}
+          >
+            ➕ Check In Guest
+          </button>
+
+          {showRoomForm && (
+            <div style={{
+              backgroundColor: '#f1faf3',
+              padding: '20px',
+              borderRadius: '8px',
+              marginBottom: '20px',
+              border: '1px solid #d0e7cd'
+            }}>
+              <h3 style={{ marginTop: 0 }}>Check In Guest</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginBottom: '15px' }}>
+                <input
+                  type="text"
+                  placeholder="Guest Name"
+                  value={roomFormData.guestName}
+                  onChange={(e) => setRoomFormData({ ...roomFormData, guestName: e.target.value })}
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #d0e7cd' }}
+                />
+                <input
+                  type="date"
+                  value={roomFormData.checkInDate}
+                  onChange={(e) => setRoomFormData({ ...roomFormData, checkInDate: e.target.value })}
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #d0e7cd' }}
+                />
+                <input
+                  type="date"
+                  value={roomFormData.checkOutDate}
+                  onChange={(e) => setRoomFormData({ ...roomFormData, checkOutDate: e.target.value })}
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #d0e7cd' }}
+                />
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '15px' }}>
+            {rooms.map(room => (
+              <div key={room.id} style={{
+                border: '2px solid #d0e7cd',
+                borderRadius: '8px',
+                padding: '20px',
+                backgroundColor: room.status === 'available' ? '#e8f5e9' : room.status === 'occupied' ? '#e3f2fd' : '#ffe0b2',
+              }}>
+                <h3 style={{ margin: '0 0 10px 0' }}>🛏️ Room {room.number}</h3>
+                {room.status === 'occupied' && room.guestName && (
+                  <>
+                    <p style={{ margin: '5px 0', fontSize: '14px' }}><strong>Guest:</strong> {room.guestName}</p>
+                    <p style={{ margin: '5px 0', fontSize: '12px', color: '#666' }}>Check-in: {room.checkInDate}</p>
+                    <p style={{ margin: '5px 0', fontSize: '12px', color: '#666' }}>Check-out: {room.checkOutDate}</p>
+                    <button
+                      onClick={() => handleCheckOutGuest(room.id)}
+                      style={{
+                        width: '100%',
+                        marginTop: '10px',
+                        padding: '8px',
+                        backgroundColor: '#f44336',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Check Out
+                    </button>
+                  </>
+                )}
+                {room.status === 'available' && (
+                  <button
+                    onClick={() => {
+                      setShowRoomForm(true);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      backgroundColor: '#4caf50',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      marginTop: '10px'
+                    }}
+                  >
+                    Check In
+                  </button>
+                )}
+                <div style={{
+                  display: 'inline-block',
+                  backgroundColor: room.status === 'available' ? '#4caf50' : room.status === 'occupied' ? '#2196F3' : '#ff9800',
+                  color: 'white',
+                  padding: '6px 12px',
+                  borderRadius: '20px',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  marginTop: '10px'
+                }}>
+                  {room.status.toUpperCase()}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Today's Highlight Tab */}
+      {activeTab === 'highlights' && (
+        <div>
+          <div style={{
+            backgroundColor: '#f1faf3',
+            padding: '25px',
+            borderRadius: '8px',
+            border: '2px solid #d0e7cd',
+            marginBottom: '25px'
+          }}>
+            <h2 style={{ marginTop: 0 }}>⭐ Set Today's Highlight & Top Deal</h2>
+            <p style={{ color: '#666', marginBottom: '20px' }}>Select one menu item to highlight and one as the top deal of the day. These will be shown in the customer-facing menu.</p>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+              <div>
+                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '10px' }}>Today's Highlight Item:</label>
+                <select
+                  value={highlightedItem || ''}
+                  onChange={(e) => setHighlightedItem(e.target.value ? parseInt(e.target.value) : null)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #d0e7cd', fontSize: '14px' }}
+                >
+                  <option value="">Select an item...</option>
+                  {menuItems.map(item => (
+                    <option key={item.id} value={item.id}>
+                      {item.name} - ₹{item.price}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '10px' }}>Top Deal of the Day:</label>
+                <select
+                  value={topDealItem || ''}
+                  onChange={(e) => setTopDealItem(e.target.value ? parseInt(e.target.value) : null)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #d0e7cd', fontSize: '14px' }}
+                >
+                  <option value="">Select an item...</option>
+                  {menuItems.map(item => (
+                    <option key={item.id} value={item.id}>
+                      {item.name} - ₹{item.price}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <button
+              onClick={handleSetHighlight}
+              style={{
+                width: '100%',
+                padding: '12px 24px',
+                backgroundColor: '#4caf50',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '16px'
+              }}
+            >
+              ✨ Set Highlights
+            </button>
+
+            {highlightedItem && topDealItem && (
+              <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#e8f5e9', borderRadius: '4px' }}>
+                <p><strong>Preview:</strong></p>
+                <p>Highlight: {menuItems.find(i => i.id === highlightedItem)?.name}</p>
+                <p>Top Deal: {menuItems.find(i => i.id === topDealItem)?.name}</p>
+              </div>
+            )}
           </div>
         </div>
       )}
